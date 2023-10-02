@@ -1,0 +1,139 @@
+---
+title: "Homework1-3"
+output: html_document
+date: "2023-09-28"
+---
+
+## Question1
+
+```{r, message = FALSE}
+library(tidyverse)
+theme_set(theme_minimal())
+exercise_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/visualize_data.csv")
+glimpse(exercise_data)
+```
+
+Expected relationship: People with more exercise has more BMI.
+
+```{r}
+cor(exercise_data$Exercise, exercise_data$BMI)
+```
+
+It has a negative correlation, which means Exercise increase and BMI decreases.
+
+```{r}
+ggplot(data = exercise_data,
+       mapping = aes(x = Exercise,
+                     y = BMI)) +
+  geom_point()
+```
+
+## Question2
+
+```{r, message = FALSE}
+library(causact)
+glimpse(corruptDF)
+```
+
+```{r}
+?corruptDF
+```
+
+CPI2017
+
+:   captures the extent to which corruption is believed to exist within a country.
+
+HDI2017
+
+:   captures the achievement in the basic dimensions of human development across countries.
+
+## Question3
+
+```{r}
+ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017)) +
+  geom_point()
+```
+
+It seems that with higher CPI, the HDI would be higher too.
+
+## Question4
+
+```{r}
+ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017)) +
+  geom_point() +
+  geom_smooth(method = "lm",se = FALSE)
+```
+
+```{r}
+ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017)) +
+  geom_point() +
+  geom_smooth(method = "gam",se = FALSE)
+```
+
+The lm assumes a linear relationship between two variables while the gam method is more flexible and presents a non-linear relationship between variables. In this case, CPI and HDI is not strictly linear, so that gam method could be more useful.
+
+## Question 5
+
+```{r}
+  ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017,
+                     color = region)) +
+  geom_point() +
+  geom_smooth(method = "gam",se = FALSE)
+```
+
+We could see the comparisons between lines but the scatter points are cluttered together. All of the regions have positive correlations between CPI and HDI, while the relationship is most distinctive in the SSA.
+
+```{r}
+ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017,
+                     color = region)) +
+  geom_point() +
+  geom_smooth(method = "gam",se = FALSE) +
+  facet_wrap(~region)
+```
+
+## Question 6
+
+```{r}
+ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017)) +
+  geom_point() +
+  geom_smooth(method = "gam",se = FALSE) +
+   scale_x_reverse()
+```
+
+## Question 7
+
+```{r}
+my_plot <-ggplot(data = corruptDF, 
+       mapping = aes(x = CPI2017, 
+                     y = HDI2017,
+                     color = region)) +
+  geom_point() +
+  geom_smooth(method = "gam", se = FALSE) +
+  scale_x_reverse() +
+  facet_wrap(~region)+
+  labs(
+    title = "Relationship Between Corruption Perceptions and Human Development",
+    subtitle = "Analysis of CPI2017 and HDI2017",
+    caption = "Data source: https://cran.r-project.org/package=causact"
+  )
+
+my_plot
+```
+
+## Question 8
+
+```{r}
+ggsave("my_plot.png", plot = my_plot, width = 10, height = 8, units = "in", dpi = 300)
+```
