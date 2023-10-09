@@ -1,0 +1,157 @@
+---
+title: "DV05"
+output: html_document
+date: "2023-10-05"
+---
+
+```{r, message = FALSE}
+library(tidyverse)
+wncaa <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/wncaa.csv")
+
+glimpse(wncaa)
+```
+
+## Question1
+
+```{r, message = FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+champs <- wncaa %>% 
+  filter(tourney_finish == "Champ")|>
+  group_by(school) %>%
+  summarize(percentage_won = n())
+champs
+```
+
+```{r}
+ggplot(data = champs, 
+       mapping = aes(x = reorder(school, percentage_won),
+                                     y = percentage_won)) +
+  geom_bar(stat = "identity")+
+  theme_minimal()+
+  coord_flip()
+```
+
+UConn and Tennessee won the most games. Many of the schools have the same percentage of winning.
+
+## Question2
+
+```{r}
+champ_names <- unique(champs$school)
+```
+
+```{r}
+winners <- wncaa %>% 
+  filter(school %in% champ_names)
+```
+
+```{r}
+ggplot(data = winners, 
+       mapping = aes(x = school, y = seed)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+```
+
+```{r}
+ggplot(data = winners, 
+       mapping = aes(x = school, y = seed)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.5) +
+  coord_flip()+
+  theme_minimal()
+```
+
+```{r}
+ggplot(winners,
+       aes(x = seed, y = reorder(school, seed))) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = .3) +
+  theme_minimal()
+```
+
+UConn and Tennessee's median seed is #1! However the median of the seeds is not exactly ranked by school ranking.
+
+```{r}
+ggplot(winners,
+       aes(x = seed, y = reorder(school, seed))) +
+  geom_violin() +
+  geom_jitter(alpha = .3) +
+  theme_minimal()
+```
+
+The violin plot seems more informative to me because it shows the density across seeds value.
+
+## Question3
+
+```{r}
+ggplot(winners,
+       aes(x = seed, y = reorder(school, seed))) +
+  geom_point() +
+  geom_jitter(alpha = .3)  +
+  theme_minimal()
+```
+
+A scatter plot is worse, it does not provide a summary of the distribution. It only plots individual data points, which could be cluttered as shown.
+
+## Question4
+
+```{r}
+winners_mean_sd <- winners |> 
+  group_by(school) |> 
+  summarize(across(where(is.numeric),
+                   list(mean = mean,
+                        sd = sd)))
+winners_mean_sd
+```
+
+```{r}
+ggplot(data = winners_mean_sd, 
+       mapping = aes(x = reorder(school, reg_percent_mean), 
+                     y = reg_percent_mean)) +
+  geom_point() +
+  coord_flip() +
+  labs(
+    title = "Average Win Percentage Across Seasons by School",
+    x = "School",
+    y = "Average Win Percentage"
+  ) +
+  theme_minimal()
+```
+
+UConn has significantly highest average win percentage, while Texas A&M has the lowest.
+
+```{r}
+ggplot(data = winners_mean_sd, 
+       mapping = aes(x = reorder(school, reg_percent_mean), 
+                     y = reg_percent_mean)) +
+  geom_pointrange(aes(ymin = reg_percent_mean - reg_percent_sd, ymax = reg_percent_mean + reg_percent_sd)) +
+  coord_flip() +
+  labs(
+    title = "Average Win Percentage Across Seasons by School",
+    x = "School",
+    y = "Average Win Percentage"
+  ) +
+  theme_minimal()
+```
+
+Texas A&M has the narrowest interval. Having the narrowest intervals for certain schools means that their win percentages are relatively consistent and close to the mean win percentage.
+
+```{r}
+ggplot(data = winners_mean_sd, 
+       mapping = aes(x = reorder(school, reg_percent_mean), 
+                     y = reg_percent_mean)) +
+  geom_linerange(aes(ymin = reg_percent_mean - reg_percent_sd, ymax = reg_percent_mean + reg_percent_sd)) +
+  coord_flip() +
+  labs(
+    title = "Average Win Percentage Across Seasons by School",
+    x = "School",
+    y = "Average Win Percentage"
+  ) +
+  theme_minimal()
+```
+
+I think the point range is more helpful to see where the mean value is.
