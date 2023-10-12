@@ -1,0 +1,76 @@
+---
+title: "2023-10-10-inclass"
+output: html_document
+date: "2023-10-10"
+---
+
+```{r, message = FALSE}
+library(tidyverse)
+library(moderndive)
+library(ggthemes)
+library(patchwork)
+theme_set(theme_light())
+```
+
+```{r}
+data(evals) 
+glimpse(evals)
+```
+
+```{r}
+d <- evals %>%
+  rename(age = age,
+         score = score)
+library(skimr)
+skim(d)
+```
+
+```{r}
+ggplot(d,
+       aes(x = age,
+           y = score)) +
+  geom_jitter(alpha = .3)
+```
+
+```{r}
+d |> get_correlation(score ~ age)
+```
+
+```{r}
+d |> select(score, age) |> cor()
+```
+
+```{r}
+mod1 <- lm(score ~ age,
+           data = d)
+
+get_regression_table(mod1)
+```
+
+```{r}
+ggplot(d,
+       aes(x = age,
+           y = score)) +
+  geom_jitter(alpha = .3) +
+  geom_smooth(method = "lm",
+              se = FALSE)
+```
+
+```{r}
+p <- ggplot(d,
+       aes(x = age,
+           y = score)) +
+  geom_jitter(alpha = .3)
+
+p + geom_abline(intercept = 3.88,
+                slope = .067,
+                color = "blue",
+                size = 1.5)
+```
+
+```{r}
+mod2 <- lm(score ~ age,
+           data = d) 
+
+broom::tidy(mod2)
+```
