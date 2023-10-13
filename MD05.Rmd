@@ -1,0 +1,182 @@
+---
+title: "MD05"
+output: html_document
+date: "2023-10-12"
+---
+
+```{r}
+library(tidyverse)
+
+twitch_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/twitchdata-update.csv")
+
+library(janitor)
+twitch_data <- clean_names(twitch_data)
+
+colnames(twitch_data)
+```
+
+## Question1
+
+```{r}
+library(dplyr)
+
+random_streamers <- twitch_data %>% sample_n(5)
+random_streamers %>%
+select(channel,average_viewers,followers)
+
+random_streamers
+```
+
+I notice that streamers with more followers don't usually have more average viewers.
+
+```{r}
+library(dplyr)
+
+twitch_data %>%
+  select(average_viewers, followers) %>%
+  summary()
+```
+
+The average viewers among all streamers is 4781, and the average followers is 570054. There is a significant difference between median and mean, which could mean that some streamers have exceptionally high numbers in average viewers and the followers.
+
+```{r}
+library(ggplot2)
+ggplot(data = twitch_data,
+       mapping = aes(x = average_viewers, y = followers))+
+  geom_point(alpha = 0.2)
+```
+
+Most of the data cluttered together under 25000 average viewers and under 2500000 followers, but still some streamers have significant high values.
+
+```{r}
+ggplot(data = twitch_data, mapping = aes(x = average_viewers, y = followers)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth()+
+  scale_x_log10()+
+  scale_y_log10()
+```
+
+dddd
+
+```{r}
+twitch_data <- twitch_data %>% 
+  mutate(log_viewers = log10(average_viewers), 
+         log_followers = log10(followers))
+```
+
+## Question2
+
+Using `lm()` fit a model where you predict the logarithm of average viewers (`log_viewers`) using the logarithm of followes (`log_followers`). Save the results to an object called `fit1`.
+
+```{r}
+fit1 <- lm(log_viewers ~ log_followers,
+           data = twitch_data)
+
+get_regression_table(fit1)
+```
+
+```{r}
+library(broom)
+tidy(fit1)
+```
+
+1% increase in viewers is associated with a 79.9% in followers.
+
+## Question3
+
+```{r}
+library(broom)
+
+pred_data <- augment(fit1)
+
+glimpse(pred_data)
+```
+
+```{r}
+pred_data %>% 
+  ggplot(aes(x = log_followers, 
+             y = log_viewers)) +
+  geom_jitter(alpha = 0.4) + 
+  geom_line(aes(x = log_followers, 
+                y = .fitted), 
+            col = "orange") + 
+  theme_minimal() +
+  labs(subtitle = "Fitted Model and Raw Data", 
+       title = "Followers & Average Viewership", 
+       x = "log(followers)", 
+       y = "log(viewers)")
+```
+
+The orange line captures a general trend and indicates a positive linear relationship between log-transformed followers and log-transformed viewers. The jitter points are from the raw data, indicates variability.
+
+```{r}
+pred_data %>%
+  ggplot(aes(x = log_followers, y = log_viewers)) +
+  geom_line(data = pred_data, 
+            mapping = aes(x = log_followers, y = .resid), col = "orange") + 
+  theme_minimal()
+```
+
+Residuals do happen often in a particular range in the x-axis (from 4.5 to 6.5). It means our model would systematically fail to predict part of our data.
+
+## Question4
+
+```{r}
+head(twitch_data)
+```
+
+```{r}
+twitch_data %>%
+  select(average_viewers, language) %>%
+  summary() 
+table(twitch_data$language)
+```
+
+```{r}
+ggplot(data = twitch_data,
+         mapping = aes(x = reorder(language, average_viewers), 
+                       y = average_viewers)) +
+  geom_bar(stat = "summary") +
+  coord_flip()+
+  theme_minimal() +
+  labs(
+    title = "Average Viewership by Language",
+    x = "Language",
+    y = "Average Viewers"
+  )
+```
+
+Surprisingly English only ranked 4th among all the channels of all language. The language with most average viewers is Russian, followed by Spanish and Arabic.
+
+## Question5
+
+```{r}
+twitch_data <- twitch_data %>% 
+  mutate(language = as.factor(language), 
+         language = relevel(language, ref = "English"))
+```
+
+```{r}
+fit2 <- lm(average_viewers ~ language, 
+            data = twitch_data)
+
+get_regression_table(fit2)
+```
+
+If the coefficients is positive, it suggests that the streaming language associated with more average viewers compared to English, vice versa. A smaller positive or larger negative coefficient indicates closer to the English average viewers. Only three of the language has positive coefficient and the others are all negative.
+
+## Question6
+
+```{r}
+pred_data <- augment(fit2)
+
+residual_plot <- pred_data %>%
+  ggplot(aes(x = average_viewers, y = .resid)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth() +
+  scale_x_log10() +
+  theme_minimal() +
+  labs(subtitle = "Residual Plot", title = "Residuals vs. Average Viewers", x = "Average Viewers", y = "Residuals")
+
+residual_plot
+```
