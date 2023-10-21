@@ -69,10 +69,9 @@ twitch_data <- twitch_data %>%
 Using `lm()` fit a model where you predict the logarithm of average viewers (`log_viewers`) using the logarithm of followes (`log_followers`). Save the results to an object called `fit1`.
 
 ```{r}
-fit1 <- lm(log_viewers ~ log_followers,
-           data = twitch_data)
+fit1 <- lm(log_viewers ~ log_followers, data = twitch_data)
 
-get_regression_table(fit1)
+broom::tidy(fit1)
 ```
 
 ```{r}
@@ -81,6 +80,8 @@ tidy(fit1)
 ```
 
 1% increase in viewers is associated with a 79.9% in followers.
+
+It is weird that get_regression_table doesn't work on my computer but broom::tidy() does work.
 
 ## Question3
 
@@ -160,7 +161,7 @@ twitch_data <- twitch_data %>%
 fit2 <- lm(average_viewers ~ language, 
             data = twitch_data)
 
-get_regression_table(fit2)
+broom::tidy(fit2)
 ```
 
 If the coefficients is positive, it suggests that the streaming language associated with more average viewers compared to English, vice versa. A smaller positive or larger negative coefficient indicates closer to the English average viewers. Only three of the language has positive coefficient and the others are all negative.
@@ -173,10 +174,15 @@ pred_data <- augment(fit2)
 residual_plot <- pred_data %>%
   ggplot(aes(x = average_viewers, y = .resid)) +
   geom_point(alpha = 0.4) +
-  geom_smooth() +
+  geom_hline(yintercept = 0, color = "red") +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
   scale_x_log10() +
   theme_minimal() +
   labs(subtitle = "Residual Plot", title = "Residuals vs. Average Viewers", x = "Average Viewers", y = "Residuals")
 
 residual_plot
 ```
+
+There are two points significantly deviated from the fitted regression line. Are they the missing points we should find?
+
+![](http://127.0.0.1:44467/chunk_output/A1032ED32cc5fd02/9244C728/chp9l9b3vech3/000018.png)
