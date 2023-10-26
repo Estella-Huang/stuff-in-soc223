@@ -1,0 +1,173 @@
+---
+title: "MD06"
+output: html_document
+date: "2023-10-24"
+---
+
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+gender_employment <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/gender_employment.csv")
+
+glimpse(gender_employment)
+```
+
+```{r}
+gender_employment%>% 
+  ggplot(aes(x = year, y = wage_percent_of_male)) +
+  geom_jitter(alpha = 0.1) + 
+  geom_smooth(method = "lm") + 
+  labs(title = "Women's earnings with respect to men's", 
+       y = "% of Men's Income", 
+       x = "Year")
+```
+
+## Question1
+
+```{r}
+gender_employment <- gender_employment %>% 
+  mutate(major_category = as.factor(major_category), 
+         major_category = relevel(major_category, ref = "Management, Business, and Financial"))
+```
+
+```{r}
+library(broom)
+library(moderndive)
+parallel_model <- lm(wage_percent_of_male ~ year + major_category, 
+                     data = gender_employment)
+broom::tidy(parallel_model)
+```
+
+The overall trends grows very slowly by years, with the coefficient of estimated 0.19.
+
+wage_percentage_of_male = -306.7183854 + 0.1922095 \* year + major_category \* 1
+
+```{r}
+-306.7183854 + 0.1922095 * 2015 + 3.3261175
+```
+
+The wage percentage of male in Sales and Office in 2015 is 83.90987.
+
+```{r}
+-306.7183854 + 0.1922095 * 2016 + 6.0769722
+```
+
+the wage percentage of male in Service in 2016 is 86.85294.
+
+## Question2
+
+```{r}
+ggplot(data= parallel_model,
+       mapping = aes(x= year,
+                     y= wage_percent_of_male,
+                     group =major_category)) +
+  geom_parallel_slopes(se = FALSE)
+```
+
+```{r}
+ggplot(data = gender_employment, 
+       mapping = aes(x = year, y = wage_percent_of_male, 
+           color = major_category)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Trends in Women's Earnings with Respect to Men's",
+       y = "% of Men's Income",
+       x = "Year") +
+  facet_wrap(~ major_category)
+```
+
+The facet plot shows that the parallel assumption is not warranted, as we can see, the slope is different for each of the major category. They tend not to be parallel but have intersections with each other.
+
+## Question3
+
+```{r}
+interaction_model <- lm(wage_percent_of_male ~ year * major_category, 
+                        data = gender_employment)
+broom::tidy(interaction_model)
+```
+
+"Computer, Engineering, and Science" for 2016 is 87.14616.
+
+```{r}
+-1370.4719187 + 0.7202561 * 2016 + 1002.8532317 - 0.4946783 * 2016
+```
+
+"Service" in 2016 is 86.06981.
+
+```{r}
+-1370.4719187 + 0.7202561 * 2016 + 2137.6501474 - 1.0581075 * 2016
+```
+
+The intercept for "service" is higher than for "Computer, Engineering and Science"(2137.6501474-1002.8532317) ; and the slope for "service" is lower than "Computer, Engineering and Science" (-1.0581075 + 0.4946783).
+
+## Question4
+
+With this parallel model with the same slope, the increment for wage percentage of male is the same with the increment of year, so that the difference in intercept could clearly show which category has the higher or lower percentage initially.
+
+"all other things being equal, simpler models are to be preferred over complex ones.", said in ModernDive. In some cases when additional complexity is not warranted, the parallel model could give a more explicit and straightforward look.
+
+## Question5
+
+```{r}
+simple_fit <- lm(wage_percent_of_male ~ year, 
+                 data = gender_employment)
+
+broom::tidy(simple_fit)
+```
+
+```{r}
+gender_employment %>% 
+  select(year, wage_percent_of_male, percent_female) %>% 
+  cor(use = "complete.obs")
+```
+
+There is a very weak positive relationship between the year and the wage percentage of males at 0.02403895.
+
+There is a weak positive relationship between the wage percentage of males and the percentage of females in the workforce at 0.11146446.
+
+There is a very weak positive relationship between the year and the percentage of females in the workforce at 0.004998286.
+
+```{r}
+multiple_fit <- lm(wage_percent_of_male ~ year * percent_female, 
+                   data = gender_employment)
+
+broom::tidy(multiple_fit)
+```
+
+The intercept is approximately -800.11, representing the expected wage percentage of male when both the year and percent_female are at zero. The positive coefficient in percent_female indicates that as the proportion of women in the occupation increases by one unit, the wage percentage of males increases. The coefficient for the interaction between "year" and "percent_female" is approximately -0.0053, which is not statistically significant, indicating that the conditional effects of these variables on the wage percentage of males are not supported by the data.
+
+## Question6
+
+R² could be used to explain the proportion of the variation in the outcome that can be accounted for by the independent variables in a regression model. An R² of 0 means that the independent variables do not explain any of the variation in the outcome, and an R² of 1 means the independent variables perfectly explain everything in the outcome.
+
+```{r}
+simple_glanced <- glance(simple_fit)
+simple_glanced$r.squared
+```
+
+```{r}
+multiple_glanced <- glance(multiple_fit)
+multiple_glanced$r.squared
+```
+
+The second model has higher R square value than the first model, means that when considering the proportion of women in the workforce, provides a better fit to the data when explaining changes in the gender pay gap over the years compared to the simple model.
+
+A warning sign
+
+```{r}
+random_numbers <- rnorm(n = nrow(gender_employment), 
+                        mean = 0, 
+                        sd = 4)
+```
+
+```{r}
+gender_employment$random_noise <- random_numbers
+
+random_fit <- lm(wage_percent_of_male ~ year + percent_female + random_noise, data = gender_employment)
+```
+
+```{r}
+random_glanced <- glance(random_fit)
+random_glanced$r.squared
+```
+
+It seems that the R squared value slightly increased when add a random variable.
