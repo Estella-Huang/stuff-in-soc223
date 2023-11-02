@@ -1,0 +1,204 @@
+---
+title: "MD6 Extra"
+output: html_document
+date: "2023-10-31"
+---
+
+```{r, message = FALSE}
+library(tidyverse)
+library(moderndive)
+theme_set(theme_minimal())
+```
+
+```{r}
+data(bikes, package = "bayesrules") 
+glimpse(bikes)
+```
+
+## Question0
+
+-   how many rows are in the dataset? 500
+
+-   what does each row represent? The weather information on a particular date.
+
+-   what dates does the dataset cover? From 2011.1.1 to 2012.12.31
+
+-   what is the highest observed ridership in the dataset? 6946.
+
+-   what was the highest wind speed recorded in the dataset? 34.00002
+
+    ## **Question1**
+
+    ```{r}
+    get_correlation(rides~temp_feel,
+                    data = bikes)
+    ```
+
+```{r}
+get_correlation(rides~windspeed,
+                data = bikes)
+```
+
+The correlation between rides and the temperature feeling is positive, means generally as the temperature increases, the rides also increase.
+
+The correlation between rides and windspeed is negative, means as the windspeed increases, the rides decrease.
+
+## Question2
+
+```{r}
+bikes$wind_kph <- bikes$windspeed * 1.61
+get_correlation(windspeed~wind_kph,
+                data = bikes)
+```
+
+The correlation is 1, because the wind speed in mph and in kph has a simple linear relationship with a constant factor of 1.61.
+
+## Question3
+
+```{r}
+library(broom)
+library(ggplot2)
+
+model_mph <- lm(rides ~ windspeed, 
+                data = bikes)
+broom::tidy(model_mph) |>
+select(term, estimate)
+```
+
+```{r}
+model_kph <- lm(rides ~ wind_kph, 
+                data = bikes)
+broom::tidy(model_kph)|>
+select(term, estimate)
+```
+
+The intercepts of two sets are the same, which means that when the wind speed is zero (whether in kph or mph), the model assumes the same result of rides. The slope of the two models are different, because mph and kph are different units as predictor variable. Every one-unit increase of wind speed in mph and kph results in different numbers of rides, and two coefficients should essentially differ by a factor of 1.61.
+
+## Question4
+
+```{r}
+library(ggeffects)
+predictions <- ggpredict (model_mph,
+                          windspeed = "20",
+                          ci_level = NA)
+predictions
+```
+
+The prediction of the rides at 20 mph wind speed is 3094.61.
+
+```{r}
+predictions <- ggpredict (model_kph,
+                          windspeed = "20",
+                          ci_level = NA)
+predictions
+```
+
+The prediction of the rides at 20 kph wind speed is 3515.34.
+
+## Question5
+
+```{r}
+bikes <- bikes %>% 
+  mutate(temp_c = (temp_feel-32)*(5/9))
+```
+
+```{r}
+multiple_model <- lm(rides ~ wind_kph + temp_c, 
+                     data = bikes)
+
+broom::tidy(multiple_model) |>
+  select(term, estimate)
+```
+
+For a 1 kph increase in wind speed, the model expects a decrease of approximately 19.84 rides.
+
+For a 1 degree Celsius increase in temperature, the model expects an increase of approximately 143.23 rides.
+
+The intercept of approximately 942.43 represents the estimated number of rides when the wind speed is 0 KPH and the temperature is at 0 degrees Celsius.
+
+## Question6
+
+```{r}
+pred_df <- tibble(
+  situation = 1:3,
+  temp_c = c(25, 15, 10),
+  wind_kph = c(15, 5, 40)
+)
+
+intercept <- 942.42575
+coeff_wind_kph <- -19.84224
+coeff_temp_c <- 143.23421
+
+pred_df <- pred_df %>%
+  mutate(
+    predicted_ridership = intercept + coeff_wind_kph * wind_kph + coeff_temp_c * temp_c
+  )
+
+pred_df
+```
+
+The predicted ridership for the first situation is 4225.647, for the second situation is 2991.728, and for the third situation is 1581.078.
+
+## Question7
+
+```{r}
+weekend_model <- lm(rides ~ wind_kph + temp_c + weekend, data = bikes)
+
+broom::tidy(weekend_model)|>
+select(term,estimate)
+```
+
+The coefficient at -713.58 means that, holding other factors constant, on weekends the model expects a decrease of approximately 713.58 rides compared to weekdays.
+
+## Question8
+
+```{r}
+intercept <- 1214.80251
+coeff_wind_kph <- -20.38598
+coeff_temp_c <- 140.33863
+coeff_weekend_true <- -713.57504
+
+average_temp_c <- mean(bikes$temp_c)
+average_wind_kph <- mean(bikes$wind_kph)
+
+ridership_weekend <- 
+  intercept + coeff_temp_c * average_temp_c + coeff_wind_kph * average_wind_kph + coeff_weekend_true * 1
+
+ridership_weekend
+```
+
+```{r}
+ridership_weekday <- 
+  intercept + coeff_temp_c * average_temp_c + coeff_wind_kph * average_wind_kph + coeff_weekend_true * 0
+
+ridership_weekday
+```
+
+At average temperature and average wind speed, the ridership at the weekend is estimated 2969.867, and the ridership on the weekdays us 3683.442.
+
+## Question9
+
+```{r}
+predicted_rides <- 
+  predict(weekend_model, 
+          data = bikes)
+
+residuals <- bikes$rides - predicted_rides
+bikes <- bikes %>% mutate(residuals = residuals)
+
+bikes %>% arrange(desc(abs(residuals)))
+```
+
+```{r}
+predicted_rides <- 
+  predict(weekend_model, 
+          data = bikes)
+
+residuals <- bikes$rides - predicted_rides
+
+max_residual_date <- bikes[which.max(abs(residuals)), "date"]
+
+max_residual_date
+```
+
+It is strange that I use two similar methods to find the largest absolute residual but the results are not the same. The first one show it's 2012-8-17, and the second one shows 2012-10-29. I could not really find out the reason why.
