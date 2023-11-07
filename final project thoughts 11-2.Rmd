@@ -1,0 +1,13 @@
+---
+title: "final project thoughts"
+output: html_document
+date: "2023-11-02"
+---
+
+11-2 final project (I forgot to commit this after class!)
+
+Isabelle is going to look for some dataset for art market around the world.
+
+Ethan is going to work on his project based on some baseball game season dataset.
+
+I found three interesting dataset that I might going to work on for my project: one is a data about online streaming application, one is about coursera course dataset, and one is collecting all the data about Harry Potter world characters!
