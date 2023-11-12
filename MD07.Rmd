@@ -1,0 +1,182 @@
+---
+title: "MD07"
+output: html_document
+date: "2023-11-09"
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(moderndive)
+theme_set(theme_minimal())
+
+nobel_winners <- read_csv("C:/Users/黄诗谣/Desktop/Estella/DUKE/SOC223/nobel_winners.csv")
+```
+
+```{r}
+nobel_winners_flt <- nobel_winners %>% 
+  filter(category != "Peace") %>% 
+  mutate(is_us = if_else(birth_country == "United States of America", 1, 0))
+```
+
+```{r}
+true_prop <- nobel_winners_flt %>% 
+  group_by(is_us) %>% 
+  summarise(prop = n()/nrow(nobel_winners_flt))
+
+ggplot() + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,1)) + 
+  geom_vline(xintercept = true_prop[2,2][[1]], linetype = "dashed")  + 
+  labs(x = "Proportion")
+```
+
+The true proportion of US-born Nobel Prize Winner is about 31%.
+
+```{r}
+# Random sample 
+our_sample <- sample_n(nobel_winners_flt, 
+                       size = 25, 
+                       replace = F)
+
+sample_prop <- our_sample %>% 
+  group_by(is_us) %>% 
+  summarise(prop = n()/nrow(our_sample))
+
+# How does our proportion look like? 
+ggplot() + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,1)) + 
+  geom_vline(xintercept = true_prop[2,2][[1]], linetype = "dashed")  + 
+  geom_vline(xintercept = sample_prop[2,2][[1]], linetype = "dotted", col = "red") +
+  labs(x = "Proportion")
+```
+
+## Question1
+
+In this scenario, what is the population? The population is all the Nobel Prize winners except the Nobel Prize winners.
+
+What is the sampling frame? All the population, that is all the Nobel scientific Prize winners.
+
+What does the black line represent? (hint: the word population is in the name). The black line represents the true proportion of US-born Nobel prize winners in the entire population of scientific Nobel prize winners.
+
+What does the red line represent? It represents the proportion of US-born Nobel prize winners in the samples of 25 Nobel prize winners.
+
+## Question2
+
+```{r}
+sample_results <- rep_sample_n(
+  nobel_winners_flt,
+  size = 25,
+  reps = 50,
+  replace = FALSE
+)
+```
+
+```{r}
+# Calculate the true proportion
+true_prop <- nobel_winners_flt %>% 
+  group_by(is_us) %>% 
+  summarise(prop = n()/nrow(nobel_winners_flt))
+
+# Calculate the mean proportion of samples
+mean_prop <- sample_results %>% 
+  group_by(replicate) %>% 
+  summarise(sample_prop = sum(is_us) / n())
+
+# Plot the results
+ggplot(sample_results) +
+  coord_cartesian(xlim = c(0.3,0.4), ylim = c(0,1)) +
+  geom_vline(xintercept = true_prop[2, 2][[1]], linetype = "dashed", color = "black", size = 1) +
+  geom_vline(xintercept = mean(mean_prop$sample_prop), linetype = "dotted", color = "red", size = 1) +
+  labs(x = "Proportion")
+
+```
+
+## Question3
+
+```{r}
+sample_results2 <- rep_sample_n(
+  nobel_winners_flt,
+  size = 100,
+  reps = 50,
+  replace = FALSE
+)
+```
+
+```{r}
+# Calculate the true proportion
+true_prop <- nobel_winners_flt %>% 
+  group_by(is_us) %>% 
+  summarise(prop = n()/nrow(nobel_winners_flt))
+
+# Calculate the mean proportion of samples
+mean_prop2 <- sample_results2 %>% 
+  group_by(replicate) %>% 
+  summarise(sample_prop2 = sum(is_us) / n())
+
+# Plot the results
+ggplot(sample_results2) +
+  coord_cartesian(xlim = c(0.3,0.4), ylim = c(0,1)) +
+  geom_vline(xintercept = true_prop[2, 2][[1]], linetype = "dashed", color = "black", size = 1) +
+  geom_vline(xintercept = mean(mean_prop2$sample_prop2), linetype = "dotted", color = "red", size = 1) +
+  labs(x = "Proportion")
+```
+
+The first distribution varies more. Because the second one provides larger sample size so that it could be closer to the true proportion.
+
+## Question4
+
+```{r}
+std_dev_25 <- sd(mean_prop$sample_prop)
+
+std_dev_25
+```
+
+```{r}
+std_dev_100 <- sd(mean_prop2$sample_prop2)
+
+std_dev_100
+```
+
+The first one has the larger standard deviation than the second one, means that the sample proportion with 25 samples is more spread out in terms of the mean proportion, while the second one with 100 samples is less spread out. It could support my argument.\
+As the sample size increases, the variability in the estimates tends to decrease.
+
+## Question5
+
+```{r}
+nobel_winners_flt_woman <- nobel_winners %>% 
+  filter(category != "Peace") %>% 
+  mutate(is_woman = if_else(gender == "Female", 1, 0))
+```
+
+```{r}
+true_prop_woman <- nobel_winners_flt_woman %>% 
+  group_by(is_woman) %>% 
+  summarise(prop = n() / nrow(nobel_winners_flt_woman))
+
+ggplot() + 
+  coord_cartesian(xlim = c(0, 0.25), ylim = c(0, 1)) + 
+  geom_vline(xintercept = true_prop_woman[2, 2][[1]], linetype = "dashed") + 
+  labs(x = "Proportion")
+```
+
+```{r}
+random_sample <- sample_n(nobel_winners_flt_woman, 
+                       size = 100, 
+                       replace = F)
+
+sample_prop_woman <- random_sample %>% 
+  group_by(is_woman) %>% 
+  summarise(prop = n()/nrow(random_sample))
+
+ggplot() + 
+  coord_cartesian(xlim = c(0,0.25), ylim = c(0,1)) + 
+  geom_vline(xintercept = true_prop_woman[2,2][[1]], linetype = "dashed")  + 
+  geom_vline(xintercept = sample_prop_woman[2,2][[1]], linetype = "dotted", col = "red") +
+  labs(x = "Proportion")
+```
+
+The proportion of female scientists in 100 random samples is about 6%.
+
+## Question6
+
+The central limit theorem states that with the increase of the sample size, the distribution of the sample means will become approximately normal, regardless of the population distribution. If we take the sample sizes that are large enough and calculate their means, the means would follow a normal distribution.
