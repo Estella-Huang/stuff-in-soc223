@@ -10,4 +10,14 @@ Isabelle is going to look for some dataset for art market around the world.
 
 Ethan is going to work on his project based on some baseball game season dataset.
 
-I found three interesting dataset that I might going to work on for my project: one is a data about online streaming application, one is about coursera course dataset, and one is collecting all the data about Harry Potter world characters!
+I would use this informative dataset of a streaming application for my final project.
+
+```{r}
+streaming_data <- read.csv("C:/Users/黄诗谣/Desktop/Estella/DUKE/SOC223/streaming_viewership_data.csv")
+```
+
+```{r}
+head(streaming_data)
+```
+
+Starting with basic statistics, I will analyze the common patterns and differences in primary factors such as 'Duration_Watched'. By applying regression analysis, this project will unveil the connections among these variables and clarify factors that affect how users engage. It will also analyze user demographics and locations. The goal is to develop a thorough understanding of user behavior, preferences, and the factors behind the success of our streaming service through statistical models and visualizations.

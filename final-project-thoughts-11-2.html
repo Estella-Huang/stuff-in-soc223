@@ -360,10 +360,46 @@ display: none;
 world.</p>
 <p>Ethan is going to work on his project based on some baseball game
 season dataset.</p>
-<p>I found three interesting dataset that I might going to work on for
-my project: one is a data about online streaming application, one is
-about coursera course dataset, and one is collecting all the data about
-Harry Potter world characters!</p>
+<p>I would use this informative dataset of a streaming application for
+my final project.</p>
+<pre class="r"><code>streaming_data &lt;- read.csv(&quot;C:/Users/黄诗谣/Desktop/Estella/DUKE/SOC223/streaming_viewership_data.csv&quot;)</code></pre>
+<pre class="r"><code>head(streaming_data)</code></pre>
+<pre><code>##                                User_ID                           Session_ID
+## 1 eb4f9229-74df-45f6-baac-cf19241b8b30 cb2142a7-0750-49ed-b8ac-a975fe1ff69a
+## 2 661d4b59-4328-410a-901c-1e3b4c40c334 3bc0a662-b353-4015-8b0c-55ceb510d13a
+## 3 dd3fe9e9-ea82-4891-ab93-8a47c80e3251 bd545b4a-9f54-4e87-b9f8-15ae20b44f22
+## 4 a1b3365b-1d00-4ddf-bc43-02fc9c10c680 0441086d-c59e-478d-a496-5c5b995ecfdb
+## 5 338d3f91-5f1c-4590-8803-324901826406 0295f01d-7f15-4799-856c-90c688697ef8
+## 6 076b03f1-fd5b-4abe-b22e-cf3b4fdad381 ae95a7b7-6502-4da8-a6e5-9717b67c754a
+##   Device_ID Video_ID Duration_Watched..minutes.       Genre
+## 1       232       11                   90.04453      Sci-Fi
+## 2       549       85                   68.97348      Comedy
+## 3       844       50                   42.51134      Comedy
+## 4       201       38                   53.31666 Documentary
+## 5       700       31                   69.43779      Action
+## 6       514       83                   41.81091      Comedy
+##                            Country Age Gender Subscription_Status Ratings
+## 1                            Sudan  56 Female             Premium       3
+## 2                             Cuba  52   Male             Premium       3
+## 3                            Japan  14 Female             Premium       3
+## 4 Lao People&#39;s Democratic Republic  36   Male             Premium       2
+## 5                       Bangladesh  31   Male             Premium       4
+## 6                          Tokelau  53   Male             Premium       4
+##   Languages Device_Type         Location Playback_Quality Interaction_Events
+## 1   Spanish  Smartphone        Reedshire               4K                 73
+## 2   Chinese     Desktop      Stevenhaven               SD                 22
+## 3   Spanish      Tablet       Vaughntown               HD                 41
+## 4   Spanish      Laptop East Raymondbury               SD                 40
+## 5    German      Laptop   Michaelchester               HD                 41
+## 6    French      Laptop        Thomaston               SD                 76</code></pre>
+<p>Starting with basic statistics, I will analyze the common patterns
+and differences in primary factors such as ‘Duration_Watched’. By
+applying regression analysis, this project will unveil the connections
+among these variables and clarify factors that affect how users engage.
+It will also analyze user demographics and locations. The goal is to
+develop a thorough understanding of user behavior, preferences, and the
+factors behind the success of our streaming service through statistical
+models and visualizations.</p>
 
 
 
