@@ -1,0 +1,163 @@
+---
+title: "MD8-9"
+output: html_document
+date: "2023-11-21"
+---
+
+```{r}
+library(tidyverse)
+library(moderndive)
+library(infer)
+```
+
+## Question1
+
+```{r}
+set.seed(1108)
+
+poll <- tibble(
+  vote_gop = rbinom(n = 1000,
+                    size = 1,
+                    prob = .53))
+```
+
+```{r}
+n_bootstrap_samples <- 1000
+
+bootstrap_dist <- 
+  rep_sample_n(poll, 
+               size = nrow(poll), 
+               reps = n_bootstrap_samples, 
+               replace = TRUE) %>%
+  group_by(replicate) %>%
+  summarize(bootstrap_mean = mean(vote_gop))
+
+confidence_interval <- quantile(bootstrap_dist$bootstrap_mean, c(0.025, 0.975))
+
+confidence_interval
+```
+
+second method:
+
+```{r}
+set.seed(1108)
+
+bootstrap_interval_infer <- 
+  poll %>%
+  specify(response = vote_gop) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean") %>%
+  get_ci(level = 0.95)
+
+bootstrap_interval_infer
+```
+
+The two confidence intervals are pretty similar, but not exact the same. The process of bootstrap re sampling could result in slightly difference in the confidence intervals due to its inherent randomness.
+
+## Question2
+
+```{r}
+rap_poll <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-14/polls.csv")%>%
+  filter(rank == 1)
+
+rap_poll
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data = rap_poll, 
+       mapping = aes(x = year)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "white") +
+  labs(title = "Histogram of Release Years for #1 Ranked Tracks",
+       x = "Release Year",
+       y = "Count")+
+  theme_minimal()
+```
+
+The year of the most commonly named favorite track was 1994, with 14 critics naming a track.
+
+## Question3
+
+```{r}
+set.seed(7)
+
+bootstrap_rap <- rap_poll |>
+  rep_sample_n(size = 107, reps = 1000, replace = TRUE) |>
+  group_by(replicate) |>
+  summarize(mean_year = mean(year))
+
+quantile(bootstrap_rap$mean_year, c(0.025, 0.975))
+```
+
+The upper bound is 1993, and the lower bound is 1996.
+
+## Question4
+
+```{r}
+set.seed(7)
+
+bootstrap_rap_2 <- rap_poll |>
+  rep_sample_n(size = 25, reps = 1000, replace = TRUE) |>
+  group_by(replicate) |>
+  summarize(mean_year = mean(year))
+quantile(bootstrap_rap_2$mean_year, c(0.025, 0.975))
+```
+
+The upper bound is 1998 and the lower bound is 1992. The width of the confidence intervals is larger than the one with 107 samples because smaller samples could add the variability.
+
+# Chapter9
+
+```{r}
+pl_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/premier_league.csv")
+
+glimpse(pl_data)
+```
+
+## Question5
+
+```{r}
+hw_prop <- pl_data |>
+  filter(result == "hw") |>
+  summarize(prop_hw = n() / nrow(pl_data))
+hw_prop
+```
+
+The proportion of hw(home wins) is about 41.32%.
+
+## Question6
+
+```{r}
+set.seed(22)
+
+sampled_proportions <- c()
+
+for (i in 1:1000) {
+  
+  sampled_results <- sample(c("aw", "hw" , "d"), 
+                            size = 380,
+                            replace = TRUE, 
+                            prob = c(1/3,1/3,1/3))
+  prop <- sum(sampled_results == "hw")/380
+  sampled_proportions[i] <- prop
+  
+}
+prop_hw <- data.frame(Proportions = sampled_proportions)
+```
+
+```{r}
+prop_hw |>
+  ggplot(aes(x = Proportions)) +
+  geom_histogram(fill = "skyblue", color = "white") +
+  labs(x = "Proportion of Home Wins",
+       y = "Frequency")+
+  theme_minimal()
+```
+
+The histogram shows a normal distribution around 0.33, lower than the proportion of hw in the previous question. It suggests that the home wins is more frequent given that each result is equally likely.
+
+## Question7 & 8
+
+A null hypothesis is that the proportion of home wins is equal to the proportion of other results. If the home wins and away teams win is at the same proportion it is a null hypothesis. The alternative hypothesis would be that the proportion of home wins is different to other results.
+
+The p-value is the probability that the proportion of home wins is just as or more extreme than the proportion of home wins when we assume all three possible results (home wins, away wins, and draws) are equally probable.
