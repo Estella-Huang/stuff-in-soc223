@@ -1,0 +1,235 @@
+---
+title: "Estella-final project"
+output: html_document
+date: "2023-12-04"
+---
+
+# Case study: Coursera Courses in 2023
+
+In this project, I would like to explore a dataset containing information on Coursera courses in the year 2023. By examining course characteristics, student engagement metrics, and patterns in course offerings, I aim to unravel trends in educational fields.
+
+### Needed packages
+
+```{r, message = FALSE}
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(infer)
+library(moderndive)
+library(skimr)
+library(broom)
+```
+
+## Exploratory data analysis: Part I
+
+#### raw data values
+
+```{r, echo = FALSE}
+coursera_courses_2023 <- read.csv("C:/Users/黄诗谣/Desktop/Estella/DUKE/SOC223/coursera_courses.csv")
+glimpse(coursera_courses_2023)
+```
+
+The dataset comprises 1,000 rows and 12 columns, with each row representing a Coursera course. However, I observe that two columns are actually numerical but presents in a character format. I would like to convert them into numerical variables. Initially I encountered a warning that there are many NA when converting, then I realize the original dataset use "k" to present 1000 so that the computer could not recognize the value.
+
+```{r, echo = FALSE}
+# Convert "k" format to numeric
+convert_k_format <- function(value) {
+  if (is.character(value)) {
+    value <- as.numeric(gsub(",", "", sub("k", "e3", value, fixed = TRUE)))
+  }
+  return(value)
+}
+
+coursera_courses_2023$course_reviews_num <- convert_k_format(coursera_courses_2023$course_reviews_num)
+coursera_courses_2023$course_students_enrolled <- convert_k_format(coursera_courses_2023$course_students_enrolled)
+
+glimpse(coursera_courses_2023)
+```
+
+#### summary statistics
+
+Next I'll compute summary statistics for mean and median course ratings and course enrollments.
+
+```{r, echo = FALSE}
+summary_stats <- coursera_courses_2023 %>%
+  summarize(
+    mean_course_rating = mean(course_rating, na.rm = TRUE),
+    median_course_rating = median(course_rating, na.rm = TRUE),
+    mean_course_enrollment = mean(course_students_enrolled, na.rm = TRUE),
+    median_course_enrollment = median(course_students_enrolled, na.rm = TRUE)
+  )
+
+summary_stats
+```
+
+The mean course enrollment (143610) is far more larger than the median course enrollment (46980), meaning that there could be very different enrollment numbers across different courses.
+
+#### data visualizations
+
+Lastly I create data visualization for course ratings distribution.
+
+```{r, echo = FALSE}
+ggplot(data = coursera_courses_2023, 
+       mapping = aes(x = course_rating)) +
+  geom_histogram(binwidth = 0.1,fill = "skyblue",color = "white") +
+  labs(title = "Distribution of Course Ratings",
+       x = "Course Rating",
+       y = "Count")+
+  theme_minimal()
+```
+
+The most rating is around 4.6, and it is obviously not a normal distribution.
+
+I'd also like to explore which is the most frequently obtained skills during the courses.
+
+```{r, echo = FALSE}
+skills_df <- coursera_courses_2023 %>%
+  filter(
+    !is.na(course_skills),
+    course_skills != "",
+    course_skills != "[]",
+    course_skills != '""'
+  ) %>%
+  mutate(course_skills = gsub("\\[|\\]|\"", "", course_skills)) %>%
+  separate_rows(course_skills, sep = ", ")
+
+skills_counts <- skills_df %>%
+  count(course_skills, sort = TRUE)%>%
+  top_n(15,wt = n)
+
+ggplot(data = skills_counts, 
+       mapping = aes(x = reorder(course_skills, n), y = n)) +
+  geom_bar(stat = "identity",fill = "skyblue", color = "white") +
+  labs(title = "Top 15 Frequently Obtained Skills",
+       x = "Skills",
+       y = "Count") +
+  coord_flip() +
+  theme_minimal()
+```
+
+The most frequent obtained skills in coursera courses is python, followed by data analysis and machine learning. Seems like the computational skills are taking over.
+
+## Exploratory data analysis: Part II
+
+In this part, I aim to create multivariate visualization to show the relationships between various variables.
+
+#### How do course organizations compare in terms of course ratings?
+
+I make two plots showing the top 10 and the bottom 10 organizations. In order to do this, I use the group by() and summarize() function to make each organization has a mean ratings, and then arrange them. Here's the result:
+
+```{r, echo = FALSE}
+organization_ratings <- coursera_courses_2023 %>%
+  group_by(course_organization) %>%
+  filter(!is.na(course_rating)) %>%
+  summarize(mean_rating = mean(course_rating)) %>%
+  arrange(desc(mean_rating)) %>%
+  slice_head(n = 10)
+
+ggplot(data = organization_ratings, 
+       mapping = aes(x = mean_rating,
+                     y = reorder(course_organization, mean_rating))) +
+  geom_col(fill = "lightcoral", color = "white") +
+  labs(title = "Top 10 Course Ratings by Organization",
+       x = "Mean Course Rating",
+       y = "Course Organization") +
+  theme_minimal() +
+  coord_cartesian(xlim = c(4, 5))
+```
+
+The top 10 organizations include The University of Chicago, Eindhoven University, MOMA, etc. The ratings for the top organizations are basically close, between 4.75 to 5.
+
+```{r, echo = FALSE}
+bottom_organizations <- coursera_courses_2023 %>%
+  group_by(course_organization) %>%
+  filter(!is.na(course_rating)) %>%
+  summarize(mean_rating = mean(course_rating)) %>%
+  arrange(mean_rating) %>%
+  slice_head(n = 10)
+
+ggplot(data = bottom_organizations, 
+       mapping = aes(x = mean_rating,
+                     y = reorder(course_organization, mean_rating))) +
+  geom_col(fill = "lightgreen", color = "white") +
+  labs(title = "Bottom 10 Course Ratings by Organization",
+       x = "Mean Course Rating",
+       y = "Course Organization") +
+  theme_minimal() +
+  coord_cartesian(xlim = c(3, 5))
+```
+
+The orgnizations with lowest ratings include New York University, ISAE-SUPAERO and CompTIA, between the range of 3.5 to 4.5.
+
+#### How does the relationship between course enrollment and course ratings vary across different difficulty levels on Coursera?
+
+This scatter plot visualizes the relationship between the logarithmically transformed course enrollment (x-axis) and course ratings (y-axis) on Coursera. Each point represents a course, with the color indicating the difficulty level of the course. The points are semi-transparent for clarity, and a linear regression line is overlaid to capture the overall trend.
+
+```{r, echo = FALSE}
+#plot interaction model
+ggplot(data = coursera_courses_2023, 
+       mapping = aes(x = log10(course_students_enrolled), y = course_rating, col = course_difficulty)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relationship between log10_Course_Enrollment and Ratings",
+       x = "Log10_Course_Enrollment",
+       y = "Course Rating")+
+  theme_minimal()
+```
+
+Also, the parallel slopes model is valuable for seeing how distinct difficulty levels contribute to the relationship.
+
+```{r, echo = FALSE}
+#plot parallel slopes model
+ggplot(data = coursera_courses_2023, 
+       mapping = aes(x = log10(course_students_enrolled), y = course_rating, col = course_difficulty)) +
+  geom_point(alpha = 0.5) +
+  geom_parallel_slopes(se = FALSE) +
+  labs(title = "Relationship between log10_Course_Enrollment and Ratings",
+       x = "Log10_Course_Enrollment",
+       y = "Course Rating")+
+  theme_minimal()
+```
+
+As course enrollment increases, there seems to be a positive correlation with course ratings, suggesting that more popular courses tend to receive higher ratings. The advanced courses seem to vary the most in course ratings across the enrollment numbers. When the enrollment numbers are about 100,000, all the courses regardless of difficulty levels have similar course ratings, telling from the intersection point in the interaction model. There are also several outlier points that deviate from the typical clustering or pattern observed in the data.
+
+And here is a facet version of the interaction model:\
+
+```{r, echo = FALSE}
+# Plot interaction model with facet
+ggplot(data = coursera_courses_2023, 
+       mapping = aes(x = log10(course_students_enrolled), y = course_rating, col = course_difficulty)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relationship between log10_Course_Enrollment and Ratings",
+       x = "Log10_Course_Enrollment",
+       y = "Course Rating") +
+  facet_wrap(~course_difficulty) +
+  theme_minimal()
+```
+
+## Regression Model
+
+Follow up the previous interaction model, I conduct a regression analysis to further explore the relationship between course ratings and two key variables.
+
+```{r, echo = FALSE}
+# Fit regression model
+model <- lm(course_rating ~ log10(course_students_enrolled) * course_difficulty, 
+            data = coursera_courses_2023)
+
+#get regression model
+get_regression_table(model)
+```
+
+The intercept at 3.279 represents the expected course rating when all other predictors are zero. The positive coefficient of log10(course_students_enrolled）(0.283) indicates that, on average, an increase in the logarithm of course enrollment is associated with a 0.283 increase in the course rating.
+
+We can use the regression equation to calculate the predicted class rating, for example, in the beginner difficulty level when the enrollment is equal to 100,000.
+
+course_rating=3.279+0.283×log10​(100,000)+1.208+(−0.238)×log10(100,000)
+
+The estimated course rating is 4.712.
+
+## Conclusion
+
+In conclusion, this data analysis project explored Coursera courses in 2023, aiming to derive insights and patterns from a dataset containing information on various courses. The exploration included descriptive statistics, univariate visualizations, and multivariate analyses.
+
+We investigated the distribution of course ratings and the frequently obtained skills. Further, we delved into top-rated and bottom-rated organizations, visualizing their course ratings. The relationship between course enrollment numbers and ratings was explored through scatter plots and regression models.
